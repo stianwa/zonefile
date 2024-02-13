@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"zonefile"
+	"github.com/stianwa/zonefile"
 )
 
 func ExampleParse() {
