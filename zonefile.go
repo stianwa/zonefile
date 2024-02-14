@@ -186,50 +186,64 @@ func Parse(data []byte) ([]Entry, error) {
 			}
 			entries = append(entries, &TTL{Value: fields[1], Comment: comment})
 		default:
-			if !isSpace(line[0]) {
-				rr.DomainName = fields[0]
-				fields = fields[1:]
-			}
-			if len(fields) == 0 {
-				return nil, fmt.Errorf("bad data for RR at line %d", lineno)
-			}
-			// order of record TTL and class can be mixed
-			if len(fields) > 2 && isDigit(fields[0][0]) {
-				rr.TTL = fields[0]
-				fields = fields[1:]
-			}
-			if len(fields) > 2 && isClass(fields[0]) {
-				rr.Class = fields[0]
-				fields = fields[1:]
-			}
-			if len(fields) > 2 && rr.Class == "" && isClass(fields[0]) {
-				rr.Class = fields[0]
-				fields = fields[1:]
+			closed, err := populateRR(line, comment, fields, rr)
+			if err != nil {
+				return nil, fmt.Errorf("%v at line %d", err, lineno)
 			}
 
-			if len(fields) < 2 {
-				return nil, fmt.Errorf("bad data RDATA for RR at line %d", lineno)
-			}
-
-			if !isType(fields[0]) {
-				return nil, fmt.Errorf("bad type for RR at line %d: %s", lineno, fields[0])
-			}
-			rr.Type = fields[0]
-			fields = fields[1:]
-
-			rdata := &RData{RData: strings.Join(fields, " "), Comment: comment}
-			rr.RData = append(rr.RData, rdata)
-
-			if strings.Contains(rdata.RData, "(") && !strings.HasSuffix(rdata.RData, ")") {
-				// unclosed parenthesis, leave rr "open" for another iteration to close
+			if !closed {
 				continue
 			}
+
 			entries = append(entries, rr)
 			rr = &RR{}
 		}
 	}
 
 	return entries, nil
+}
+
+func populateRR(line, comment string, fields []string, rr *RR) (bool, error) {
+	if !isSpace(line[0]) {
+		rr.DomainName = fields[0]
+		fields = fields[1:]
+	}
+	if len(fields) == 0 {
+		return false, fmt.Errorf("bad data for RR")
+	}
+	// order of record TTL and class can be mixed
+	if len(fields) > 2 && isDigit(fields[0][0]) {
+		rr.TTL = fields[0]
+		fields = fields[1:]
+	}
+	if len(fields) > 2 && isClass(fields[0]) {
+		rr.Class = fields[0]
+		fields = fields[1:]
+	}
+	if len(fields) > 2 && rr.Class == "" && isClass(fields[0]) {
+		rr.Class = fields[0]
+		fields = fields[1:]
+	}
+
+	if len(fields) < 2 {
+		return false, fmt.Errorf("bad data RDATA for RR")
+	}
+
+	if !isType(fields[0]) {
+		return false, fmt.Errorf("bad type for RR: %s", fields[0])
+	}
+	rr.Type = fields[0]
+	fields = fields[1:]
+
+	rdata := &RData{RData: strings.Join(fields, " "), Comment: comment}
+	rr.RData = append(rr.RData, rdata)
+
+	closed := true
+	if strings.Contains(rdata.RData, "(") && !strings.HasSuffix(rdata.RData, ")") {
+		closed = false
+	}
+
+	return closed, nil
 }
 
 func comment(line string) (string, string) {
