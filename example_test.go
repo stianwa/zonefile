@@ -2,9 +2,9 @@ package zonefile_test
 
 import (
 	"fmt"
+	"github.com/stianwa/zonefile"
 	"log"
 	"os"
-	"zonefile"
 )
 
 func ExampleParse() {
