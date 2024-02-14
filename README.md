@@ -4,7 +4,6 @@
 Package zonefile implements a DNS zonefile parser according to RFC1035
 chapter 5.
 
-
 Installation
 ------------
 
@@ -15,7 +14,7 @@ go get github.com/stianwa/zonefile
 ```
 
 Example
---------
+-------
 
 ```go
 
@@ -51,9 +50,8 @@ func main() {
 ```
 
 State
--------
+-----
 The zonefile module is currently under development. Do not use for production.
-
 
 License
 -------
